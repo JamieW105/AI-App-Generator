@@ -154,12 +154,22 @@
     gap: 0.5rem;
 }
 
+.btn-google {
+    color: #ea4335;
+    border-color: #ea4335;
+}
+
 .btn-google:hover {
-    background-color: #f8f9fa;
+    background-color: rgba(234, 67, 53, 0.1);
+}
+
+.btn-github {
+    color: #333;
+    border-color: #333;
 }
 
 .btn-github:hover {
-    background-color: #f8f9fa;
+    background-color: rgba(51, 51, 51, 0.1);
 }
 
 .auth-footer {

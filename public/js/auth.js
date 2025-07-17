@@ -91,7 +91,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
                 
                 // Import the OAuth service
-                const oauthModule = await import('../src/auth/oauth-service.js');
+                const oauthModule = await import('../src/auth/oauth-service.js').catch(e => {
+                    // Try alternative path for GitHub Pages
+                    return import('./src/auth/oauth-service.js');
+                });
                 const oauthService = oauthModule.default;
                 
                 // Determine which provider to use

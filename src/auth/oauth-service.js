@@ -6,17 +6,37 @@
 const config = {
     google: {
         clientId: '123456789012-abcdefghijklmnopqrstuvwxyz123456.apps.googleusercontent.com',
-        redirectUri: window.location.origin + '/auth-callback.html',
+        redirectUri: getRedirectUri('auth-callback.html'),
         scope: 'email profile',
         authUrl: 'https://accounts.google.com/o/oauth2/v2/auth'
     },
     github: {
         clientId: 'abcdef123456789ghijkl',
-        redirectUri: window.location.origin + '/auth-callback.html',
+        redirectUri: getRedirectUri('auth-callback.html'),
         scope: 'user:email',
         authUrl: 'https://github.com/login/oauth/authorize'
     }
 };
+
+/**
+ * Get the correct redirect URI based on the environment
+ * @param {string} page - The page to redirect to
+ * @returns {string} - The full redirect URI
+ */
+function getRedirectUri(page) {
+    const isGitHubPages = window.location.hostname.includes('github.io');
+    
+    if (isGitHubPages) {
+        // Extract repository name for GitHub Pages
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts.length > 1) {
+            const repoName = pathParts[1];
+            return `${window.location.origin}/${repoName}/${page}`;
+        }
+    }
+    
+    return `${window.location.origin}/${page}`;
+}
 
 class OAuthService {
     /**

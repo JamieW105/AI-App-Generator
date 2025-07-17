@@ -2,17 +2,35 @@
  * Main JavaScript file for AI Website Generator
  */
 
-import router from '../../src/utils/router.js';
+// Import router with fallback for GitHub Pages
+let router;
+
+// Try to import from relative path first
+import('../../src/utils/router.js')
+    .then(module => {
+        router = module.default;
+        initApp();
+    })
+    .catch(error => {
+        // If that fails, try the alternative path for GitHub Pages
+        import('../src/utils/router.js')
+            .then(module => {
+                router = module.default;
+                initApp();
+            })
+            .catch(error => {
+                console.error('Failed to import router:', error);
+            });
+    });
+
+/**
+ * Initialize the application
+ */
+function initApp() {
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize the router
-    initRouter();
-    
-    // Add event listeners for navigation
-    setupNavigation();
-    
-    // Add event listeners for interactive elements
-    setupInteractiveElements();
+    // Router is initialized in the import section
+    // The initApp function will be called once the router is loaded
 });
 
 /**
@@ -33,6 +51,7 @@ function initRouter() {
     router.addRoute('/login.html', loadLoginPage);
     router.addRoute('/signup.html', loadSignupPage);
     router.addRoute('/dashboard.html', loadDashboardPage);
+    router.addRoute('/auth-callback.html', loadAuthCallbackPage);
     
     // Set 404 handler
     router.setNotFoundHandler(loadNotFoundPage);
@@ -212,137 +231,180 @@ function loadPrivacyPage() {
     document.title = 'Privacy Policy - AI Website Generator';
 }
 
-function loadLoginPage() {
+async function loadLoginPage() {
     console.log('Login page loaded');
     document.title = 'Login - AI Website Generator';
     
-    // Check if user is already logged in
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.email) {
-        // Redirect to dashboard
-        router.navigate('/dashboard.html');
-        return;
-    }
-    
-    // Set up login form submission
-    const loginForm = document.getElementById('login-form');
-    
-    if (loginForm) {
-        loginForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Get form data
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const remember = document.getElementById('remember')?.checked || false;
-            
-            // In a real app, you would validate credentials with a server
-            // For demo purposes, we'll just simulate a successful login
-            const user = {
-                name: 'Demo User',
-                email: email,
-                plan: 'free'
-            };
-            
-            // Store user data in localStorage
-            localStorage.setItem('user', JSON.stringify(user));
-            
+    try {
+        // Import the OAuth service with fallback for GitHub Pages
+        const oauthModule = await import('./auth/oauth-service.js')
+            .catch(error => import('../src/auth/oauth-service.js'))
+            .catch(error => {
+                console.error('Failed to import OAuth service:', error);
+                throw error;
+            });
+        const oauthService = oauthModule.default;
+        
+        // Check if user is already logged in
+        if (oauthService.isLoggedIn()) {
             // Redirect to dashboard
             router.navigate('/dashboard.html');
-        });
+            return;
+        }
+        
+        // Set up login form submission
+        const loginForm = document.getElementById('login-form');
+        
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form data
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const remember = document.getElementById('remember')?.checked || false;
+                
+                // In a real app, you would validate credentials with a server
+                // For demo purposes, we'll just simulate a successful login
+                const user = {
+                    name: 'Demo User',
+                    email: email,
+                    plan: 'free'
+                };
+                
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(user));
+                
+                // Redirect to dashboard
+                router.navigate('/dashboard.html');
+            });
+        }
+    } catch (error) {
+        console.error('Error loading login page:', error);
     }
 }
 
-function loadSignupPage() {
+async function loadSignupPage() {
     console.log('Signup page loaded');
     document.title = 'Sign Up - AI Website Generator';
     
-    // Check if user is already logged in
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.email) {
-        // Redirect to dashboard
-        router.navigate('/dashboard.html');
-        return;
-    }
-    
-    // Set up signup form submission
-    const signupForm = document.getElementById('signup-form');
-    
-    if (signupForm) {
-        signupForm.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            // Get form data
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const confirmPassword = document.getElementById('confirm-password').value;
-            const terms = document.getElementById('terms')?.checked || false;
-            
-            // Validate form
-            if (password !== confirmPassword) {
-                alert('Passwords do not match');
-                return;
-            }
-            
-            if (!terms) {
-                alert('You must agree to the terms');
-                return;
-            }
-            
-            // In a real app, you would create an account on the server
-            // For demo purposes, we'll just simulate a successful signup
-            const user = {
-                name: name,
-                email: email,
-                plan: 'free'
-            };
-            
-            // Store user data in localStorage
-            localStorage.setItem('user', JSON.stringify(user));
-            
+    try {
+        // Import the OAuth service
+        const oauthModule = await import('./auth/oauth-service.js');
+        const oauthService = oauthModule.default;
+        
+        // Check if user is already logged in
+        if (oauthService.isLoggedIn()) {
             // Redirect to dashboard
             router.navigate('/dashboard.html');
-        });
+            return;
+        }
+        
+        // Set up signup form submission
+        const signupForm = document.getElementById('signup-form');
+        
+        if (signupForm) {
+            signupForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Get form data
+                const name = document.getElementById('name').value;
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                const terms = document.getElementById('terms')?.checked || false;
+                
+                // Validate form
+                if (password !== confirmPassword) {
+                    alert('Passwords do not match');
+                    return;
+                }
+                
+                if (!terms) {
+                    alert('You must agree to the terms');
+                    return;
+                }
+                
+                // In a real app, you would create an account on the server
+                // For demo purposes, we'll just simulate a successful signup
+                const user = {
+                    name: name,
+                    email: email,
+                    plan: 'free'
+                };
+                
+                // Store user data in localStorage
+                localStorage.setItem('user', JSON.stringify(user));
+                
+                // Redirect to dashboard
+                router.navigate('/dashboard.html');
+            });
+        }
+    } catch (error) {
+        console.error('Error loading signup page:', error);
     }
 }
 
-function loadDashboardPage() {
+async function loadDashboardPage() {
     console.log('Dashboard page loaded');
     document.title = 'Dashboard - AI Website Generator';
     
-    // Check if user is logged in
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (!user.email) {
-        // Redirect to login
-        router.navigate('/login.html');
-        return;
-    }
-    
-    // Set user info
-    const userNameElement = document.querySelector('.user-name');
-    const userEmailElement = document.querySelector('.user-email');
-    
-    if (userNameElement && user.name) {
-        userNameElement.textContent = user.name;
-    }
-    
-    if (userEmailElement && user.email) {
-        userEmailElement.textContent = user.email;
-    }
-    
-    // Set up logout button
-    const logoutBtn = document.getElementById('logout-btn');
-    
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-            // Clear user data
-            localStorage.removeItem('user');
-            
+    try {
+        // Import the OAuth service
+        const oauthModule = await import('./auth/oauth-service.js');
+        const oauthService = oauthModule.default;
+        
+        // Check if user is logged in
+        if (!oauthService.isLoggedIn()) {
             // Redirect to login
             router.navigate('/login.html');
-        });
+            return;
+        }
+        
+        // Get user info
+        const user = oauthService.getCurrentUser();
+        
+        // Set user info
+        const userNameElement = document.querySelector('.user-name');
+        const userEmailElement = document.querySelector('.user-email');
+        const userAvatarElement = document.querySelector('.user-avatar img');
+        
+        if (userNameElement && user.name) {
+            userNameElement.textContent = user.name;
+        }
+        
+        if (userEmailElement && user.email) {
+            userEmailElement.textContent = user.email;
+        }
+        
+        if (userAvatarElement && user.avatar) {
+            userAvatarElement.src = user.avatar;
+        }
+        
+        // Set up logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', function() {
+                // Log out the user
+                oauthService.logout();
+                
+                // Redirect to login
+                router.navigate('/login.html');
+            });
+        }
+    } catch (error) {
+        console.error('Error loading dashboard page:', error);
+        router.navigate('/login.html');
     }
+}
+
+function loadAuthCallbackPage() {
+    console.log('Auth callback page loaded');
+    document.title = 'Authentication - AI Website Generator';
+    
+    // The auth-callback.html page handles the OAuth flow
+    // No need to do anything here as the page has its own script
 }
 
 function loadNotFoundPage() {
@@ -353,3 +415,5 @@ function loadNotFoundPage() {
     alert('Page not found. Redirecting to home page.');
     router.navigate('/');
 }
+
+}  // Close the initApp function
