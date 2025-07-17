@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Test - AI Website Generator</title>
+    <link rel="stylesheet" href="public/css/styles.css">
+    <style>
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .card {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .result {
+            background-color: #f3f4f6;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow: auto;
+        }
+        
+        .success {
+            color: #10b981;
+        }
+        
+        .error {
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Supabase Database Test</h1>
+        
+        <div class="card">
+            <h2>Connection Test</h2>
+            <p>Testing connection to Supabase...</p>
+            <div id="connection-result" class="result">Running test...</div>
+            <button id="test-connection" class="btn btn-primary">Test Connection</button>
+        </div>
+        
+        <div class="card">
+            <h2>Templates Test</h2>
+            <p>Fetching templates from database...</p>
+            <div id="templates-result" class="result">Click button to fetch templates...</div>
+            <button id="fetch-templates" class="btn btn-primary">Fetch Templates</button>
+        </div>
+        
+        <div class="card">
+            <h2>Create Test User</h2>
+            <p>Create a test user in the database...</p>
+            <div id="user-result" class="result">Click button to create test user...</div>
+            <button id="create-user" class="btn btn-primary">Create Test User</button>
+        </div>
+        
+        <a href="index.html" class="btn btn-outline">Back to Home</a>
+    </div>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+        import config from './src/config.js';
+        
+        // Initialize Supabase client
+        const supabaseUrl = config.api.supabase.url;
+        const supabaseKey = config.api.supabase.key;
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        
+        // Test connection
+        document.getElementById('test-connection').addEventListener('click', async () => {
+            const resultElement = document.getElementById('connection-result');
+            resultElement.textContent = 'Testing connection...';
+            
+            try {
+                const { data, error } = await supabase.from('templates').select('count');
+                
+                if (error) throw error;
+                
+                resultElement.textContent = 'Connection successful!';
+                resultElement.classList.add('success');
+                resultElement.classList.remove('error');
+            } catch (error) {
+                resultElement.textContent = `Connection failed: ${error.message}`;
+                resultElement.classList.add('error');
+                resultElement.classList.remove('success');
+                console.error('Connection error:', error);
+            }
+        });
+        
+        // Fetch templates
+        document.getElementById('fetch-templates').addEventListener('click', async () => {
+            const resultElement = document.getElementById('templates-result');
+            resultElement.textContent = 'Fetching templates...';
+            
+            try {
+                const { data, error } = await supabase.from('templates').select('*');
+                
+                if (error) throw error;
+                
+                resultElement.textContent = JSON.stringify(data, null, 2);
+                resultElement.classList.add('success');
+                resultElement.classList.remove('error');
+            } catch (error) {
+                resultElement.textContent = `Failed to fetch templates: ${error.message}`;
+                resultElement.classList.add('error');
+                resultElement.classList.remove('success');
+                console.error('Templates error:', error);
+            }
+        });
+        
+        // Create test user
+        document.getElementById('create-user').addEventListener('click', async () => {
+            const resultElement = document.getElementById('user-result');
+            resultElement.textContent = 'Creating test user...';
+            
+            try {
+                const testUser = {
+                    name: 'Test User',
+                    email: `test${Date.now()}@example.com`
+                };
+                
+                const { data, error } = await supabase.from('users').insert([testUser]).select();
+                
+                if (error) throw error;
+                
+                resultElement.textContent = `User created successfully: ${JSON.stringify(data, null, 2)}`;
+                resultElement.classList.add('success');
+                resultElement.classList.remove('error');
+            } catch (error) {
+                resultElement.textContent = `Failed to create user: ${error.message}`;
+                resultElement.classList.add('error');
+                resultElement.classList.remove('success');
+                console.error('User creation error:', error);
+            }
+        });
+    </script>
+</body>
+</html>
